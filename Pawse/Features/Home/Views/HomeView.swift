@@ -20,6 +20,7 @@ struct HomeView: View {
                     HomeStatusCard(summary: viewModel.homeSummary)
 
                     screenTimeAccessCard
+                    sessionCard
 
                     summaryCard(
                         title: L10n.selectedApps,
@@ -76,6 +77,20 @@ struct HomeView: View {
                             )
                         }
                         .buttonStyle(.plain)
+
+                        NavigationLink {
+                            BreakPreviewView(
+                                catName: viewModel.activeCatName,
+                                remainingSeconds: max(viewModel.breakDurationMinutes * 60, 1)
+                            )
+                        } label: {
+                            QuickActionCard(
+                                title: languageManager.selectedLanguage == .english ? "Preview Break Screen" : "Mola Ekranını Önizle",
+                                subtitle: languageManager.selectedLanguage == .english ? "See how Pawse looks during a break" : "Pawse'un mola sırasında nasıl göründüğünü gör",
+                                systemImageName: "moon.stars.fill"
+                            )
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     Button {
@@ -106,6 +121,13 @@ struct HomeView: View {
                 isPresented: $selectionStore.isPickerPresented,
                 selection: $selectionStore.familyActivitySelection
             )
+            .fullScreenCover(isPresented: isBreakPresented) {
+                BreakPreviewView(
+                    catName: viewModel.activeCatName,
+                    remainingSeconds: viewModel.currentBreakRemainingSeconds
+                )
+                .environmentObject(languageManager)
+            }
         }
     }
 
@@ -113,21 +135,83 @@ struct HomeView: View {
     private var screenTimeAccessCard: some View {
         CardContainer {
             VStack(alignment: .leading, spacing: 12) {
-                Text("Screen Time Access")
-                    .font(.headline)
+                HStack {
+                    Circle()
+                        .fill(viewModel.screenTimeStatus == .approved ? AppColors.success : .orange)
+                        .frame(width: 10, height: 10)
+
+                    Text(languageManager.selectedLanguage == .english ? "Screen Time Access" : "Ekran Süresi Erişimi")
+                        .font(.headline)
+
+                    Spacer()
+                }
 
                 Text(screenTimeStatusText)
                     .font(.subheadline)
                     .foregroundStyle(AppColors.secondaryText)
 
-                Button {
-                    Task {
-                        await viewModel.requestScreenTimeAccess()
+                if viewModel.screenTimeStatus != .approved {
+                    Button {
+                        Task {
+                            await viewModel.requestScreenTimeAccess()
+                        }
+                    } label: {
+                        Text(languageManager.selectedLanguage == .english ? "Enable Access" : "Erişimi Aç")
                     }
-                } label: {
-                    Text("Enable Access")
+                    .buttonStyle(PrimaryButtonStyle())
                 }
-                .buttonStyle(PrimaryButtonStyle())
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private var sessionCard: some View {
+        CardContainer {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Circle()
+                        .fill(viewModel.sessionAccentColor())
+                        .frame(width: 10, height: 10)
+
+                    Text(viewModel.sessionTitle(language: languageManager.selectedLanguage))
+                        .font(.headline)
+
+                    Spacer()
+                }
+
+                Text(viewModel.sessionDescription(language: languageManager.selectedLanguage))
+                    .font(.subheadline)
+                    .foregroundStyle(AppColors.secondaryText)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(viewModel.formattedRemainingTime(language: languageManager.selectedLanguage))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(viewModel.sessionAccentColor())
+
+                    ProgressView(value: viewModel.progressValue())
+                        .tint(viewModel.sessionAccentColor())
+                }
+
+                Text(viewModel.shieldStatusMessage)
+                    .font(.caption)
+                    .foregroundStyle(AppColors.secondaryText)
+
+                if !viewModel.isSessionRunning {
+                    Button {
+                        viewModel.startTestSession(using: selectionStore.familyActivitySelection)
+                    } label: {
+                        Text(languageManager.selectedLanguage == .english ? "Start Session" : "Oturumu Başlat")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                } else {
+                    Button {
+                        viewModel.cancelTestSession()
+                    } label: {
+                        Text(languageManager.selectedLanguage == .english ? "Cancel Session" : "Oturumu İptal Et")
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -136,14 +220,29 @@ struct HomeView: View {
     private var screenTimeStatusText: String {
         switch viewModel.screenTimeStatus {
         case .notDetermined:
-            return "Not granted yet."
+            return languageManager.selectedLanguage == .english
+                ? "Access has not been granted yet."
+                : "Henüz erişim izni verilmedi."
         case .approved:
-            return "Access granted."
+            return languageManager.selectedLanguage == .english
+                ? "Screen Time access is active."
+                : "Ekran Süresi erişimi aktif."
         case .denied:
-            return "Access denied."
+            return languageManager.selectedLanguage == .english
+                ? "Access was denied."
+                : "Erişim reddedildi."
         case .error(let message):
-            return "Error: \(message)"
+            return languageManager.selectedLanguage == .english
+                ? "Error: \(message)"
+                : "Hata: \(message)"
         }
+    }
+
+    private var isBreakPresented: Binding<Bool> {
+        Binding(
+            get: { viewModel.isBreakActive },
+            set: { _ in }
+        )
     }
 
     @ViewBuilder

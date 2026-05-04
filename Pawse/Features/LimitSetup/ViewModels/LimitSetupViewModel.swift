@@ -15,6 +15,7 @@ final class LimitSetupViewModel: ObservableObject {
     @Published var didSaveSuccessfully: Bool = false
 
     let dailyLimitOptions: [TimeLimitOption] = [
+        TimeLimitOption(minutes: 1),
         TimeLimitOption(minutes: 10),
         TimeLimitOption(minutes: 15),
         TimeLimitOption(minutes: 20),
@@ -24,6 +25,7 @@ final class LimitSetupViewModel: ObservableObject {
     ]
 
     let breakDurationOptions: [TimeLimitOption] = [
+        TimeLimitOption(minutes: 1),
         TimeLimitOption(minutes: 2),
         TimeLimitOption(minutes: 5),
         TimeLimitOption(minutes: 10),
