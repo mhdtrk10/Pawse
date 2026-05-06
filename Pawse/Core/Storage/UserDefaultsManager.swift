@@ -57,4 +57,26 @@ final class UserDefaultsManager {
             return .default
         }
     }
+    
+    func saveStatsSummary(_ summary: StatsSummary) {
+        do {
+            let data = try JSONEncoder().encode(summary)
+            UserDefaults.standard.set(data, forKey: LocalStorageKeys.statsSummary)
+        } catch {
+            print("Failed to save stats summary: \(error)")
+        }
+    }
+
+    func loadStatsSummary() -> StatsSummary {
+        guard let data = UserDefaults.standard.data(forKey: LocalStorageKeys.statsSummary) else {
+            return .default
+        }
+
+        do {
+            return try JSONDecoder().decode(StatsSummary.self, from: data)
+        } catch {
+            print("Failed to load stats summary: \(error)")
+            return .default
+        }
+    }
 }

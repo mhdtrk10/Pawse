@@ -5,8 +5,9 @@
 //  Created by Mehdi Oturak on 29.04.2026.
 //
 
-import Foundation
+
 import Combine
+import Foundation
 
 @MainActor
 final class SettingsViewModel: ObservableObject {
@@ -36,7 +37,12 @@ final class SettingsViewModel: ObservableObject {
             dailyLimitMinutes: 20,
             breakDurationMinutes: 5,
             activeCatName: "Sleepy Cat",
-            selectedApps: demoSelectedApps
+            selectedApps: demoSelectedApps,
+            selectedBreakMediaTypeRawValue: BreakMediaType.builtInCat.rawValue,
+            customPhotoFileName: nil,
+            customPhotoScale: 1.0,
+            customPhotoOffsetX: 0.0,
+            customPhotoOffsetY: 0.0
         )
 
         settingsService.saveAppSettings(demoSettings)

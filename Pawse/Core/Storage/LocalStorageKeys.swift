@@ -10,4 +10,5 @@ import Foundation
 enum LocalStorageKeys {
     static let appSettings = "appSettings"
     static let selectedLanguage = "selectedLanguage"
+    static let statsSummary = "statsSummary"
 }

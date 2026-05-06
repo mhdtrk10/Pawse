@@ -29,4 +29,58 @@ final class SettingsService {
     func saveSelectedLanguage(_ language: AppLanguage) {
         storage.selectedLanguage = language
     }
+
+    // MARK: - Break Media
+
+    func getBreakMediaType() -> BreakMediaType {
+        getAppSettings().selectedBreakMediaType
+    }
+
+    func setBreakMediaType(_ type: BreakMediaType) {
+        var settings = getAppSettings()
+        settings.selectedBreakMediaType = type
+        saveAppSettings(settings)
+    }
+
+    func getCustomPhotoFileName() -> String? {
+        getAppSettings().customPhotoFileName
+    }
+
+    func setCustomPhotoFileName(_ fileName: String?) {
+        var settings = getAppSettings()
+        settings.customPhotoFileName = fileName
+        saveAppSettings(settings)
+    }
+
+    func getCustomPhotoTransform() -> (scale: Double, offsetX: Double, offsetY: Double) {
+        let settings = getAppSettings()
+        return (
+            scale: settings.customPhotoScale,
+            offsetX: settings.customPhotoOffsetX,
+            offsetY: settings.customPhotoOffsetY
+        )
+    }
+
+    func saveCustomPhotoTransform(scale: Double, offsetX: Double, offsetY: Double) {
+        var settings = getAppSettings()
+        settings.customPhotoScale = scale
+        settings.customPhotoOffsetX = offsetX
+        settings.customPhotoOffsetY = offsetY
+        saveAppSettings(settings)
+    }
+
+    func clearCustomPhotoSettings() {
+        var settings = getAppSettings()
+        settings.selectedBreakMediaType = .builtInCat
+        settings.customPhotoFileName = nil
+        settings.customPhotoScale = 1.0
+        settings.customPhotoOffsetX = 0.0
+        settings.customPhotoOffsetY = 0.0
+        saveAppSettings(settings)
+    }
+    func switchToBuiltInCatMedia() {
+        var settings = getAppSettings()
+        settings.selectedBreakMediaType = .builtInCat
+        saveAppSettings(settings)
+    }
 }

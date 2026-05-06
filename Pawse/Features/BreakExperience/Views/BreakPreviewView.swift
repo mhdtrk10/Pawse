@@ -12,15 +12,20 @@ struct BreakPreviewView: View {
     let remainingSeconds: Int
 
     @EnvironmentObject private var languageManager: LanguageManager
-    
-    
+
+    private let catalogService = CatCatalogService()
+    private let settingsService = SettingsService()
+    private let customPhotoService = CustomPhotoService()
 
     var body: some View {
+        let activeCat = catalogService.fetchCats().first { $0.name == catName }
+        let accent = CatThemeHelper.color(for: activeCat?.accentColorKey ?? "orange")
+
         ZStack {
             LinearGradient(
                 colors: [
-                    AppColors.primary.opacity(0.12),
-                    AppColors.catAccent.opacity(0.10),
+                    accent.opacity(0.18),
+                    accent.opacity(0.08),
                     Color(.systemBackground)
                 ],
                 startPoint: .top,
@@ -32,13 +37,11 @@ struct BreakPreviewView: View {
                 Spacer()
 
                 ZStack {
-                    Circle()
-                        .fill(AppColors.catAccent.opacity(0.15))
-                        .frame(width: 180, height: 180)
+                    RoundedRectangle(cornerRadius: 32)
+                        .fill(accent.opacity(0.12))
+                        .frame(width: 280, height: 300)
 
-                    Image(systemName: "pawprint.fill")
-                        .font(.system(size: 70))
-                        .foregroundStyle(AppColors.catAccent)
+                    breakHeroImage(activeCat: activeCat, accent: accent)
                 }
 
                 VStack(spacing: 10) {
@@ -56,11 +59,21 @@ struct BreakPreviewView: View {
                     VStack(spacing: 12) {
                         Text(formattedTime)
                             .font(.system(size: 28, weight: .bold))
-                            .foregroundStyle(AppColors.primary)
+                            .foregroundStyle(accent)
 
                         Text(catMessage)
                             .font(.subheadline)
                             .foregroundStyle(AppColors.secondaryText)
+
+                        if let activeCat, selectedBreakMediaType == .builtInCat {
+                            Text(CatThemeHelper.localizedMoodMessage(for: activeCat, language: languageManager.selectedLanguage))
+                                .font(.caption)
+                                .foregroundStyle(AppColors.secondaryText)
+                        } else if selectedBreakMediaType == .customPhoto {
+                            Text(languageManager.selectedLanguage == .english ? "Your custom break photo is active." : "Özel mola fotoğrafın aktif.")
+                                .font(.caption)
+                                .foregroundStyle(AppColors.secondaryText)
+                        }
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -82,7 +95,10 @@ struct BreakPreviewView: View {
             }
             .padding()
         }
-        
+    }
+
+    private var selectedBreakMediaType: BreakMediaType {
+        settingsService.getBreakMediaType()
     }
 
     private var title: String {
@@ -104,6 +120,15 @@ struct BreakPreviewView: View {
     }
 
     private var catMessage: String {
+        if selectedBreakMediaType == .customPhoto {
+            switch languageManager.selectedLanguage {
+            case .english:
+                return "Your custom photo is watching your break."
+            case .turkish:
+                return "Özel fotoğrafın molanı takip ediyor."
+            }
+        }
+
         switch languageManager.selectedLanguage {
         case .english:
             return "\(catName) is watching your break."
@@ -121,6 +146,59 @@ struct BreakPreviewView: View {
             return String(format: "%02d:%02d left", minutes, seconds)
         case .turkish:
             return String(format: "%02d:%02d kaldı", minutes, seconds)
+        }
+    }
+
+    @ViewBuilder
+    private func breakHeroImage(activeCat: CatItem?, accent: Color) -> some View {
+        if selectedBreakMediaType == .customPhoto,
+           let image = customPhotoService.loadImage(fileName: settingsService.getCustomPhotoFileName()) {
+            let transform = settingsService.getCustomPhotoTransform()
+
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 220, height: 260)
+                .scaleEffect(transform.scale)
+                .offset(x: transform.offsetX, y: transform.offsetY)
+                .cornerRadius(12)
+                .clipShape(RoundedRectangle(cornerRadius: 32))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32)
+                        .stroke(accent.opacity(0.18), lineWidth: 1.5)
+                )
+                .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
+
+        } else if let activeCat, let gifName = activeCat.animatedGIFName {
+            AnimatedImageView(
+                fileName: gifName,
+                contentMode: .scaleAspectFit,
+                cornerRadius: 32
+            )
+            .frame(width: 270, height: 290)
+            .clipShape(RoundedRectangle(cornerRadius: 32))
+
+        } else if let activeCat, UIImage(named: activeCat.imageName) != nil {
+            Image(activeCat.imageName)
+                .resizable()
+                .scaledToFill()
+                .frame(width: 270, height: 290)
+                .clipShape(RoundedRectangle(cornerRadius: 32))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32)
+                        .stroke(accent.opacity(0.18), lineWidth: 1.5)
+                )
+                .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
+
+        } else {
+            Image(systemName: activeCat?.systemImageName ?? "pawprint.fill")
+                .font(.system(size: 82))
+                .foregroundStyle(accent)
+                .frame(width: 270, height: 290)
+                .background(
+                    RoundedRectangle(cornerRadius: 32)
+                        .fill(accent.opacity(0.10))
+                )
         }
     }
 }

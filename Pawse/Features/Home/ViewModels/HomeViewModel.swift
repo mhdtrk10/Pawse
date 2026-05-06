@@ -31,15 +31,18 @@ final class HomeViewModel: ObservableObject {
     private let shieldManager: ScreenTimeShieldManager
 
     private var countdownTask: Task<Void, Never>?
+    private let statsService: StatsService
 
     init(
         settingsService: SettingsService = SettingsService(),
         screenTimeAuthorizationManager: ScreenTimeAuthorizationManager? = nil,
-        shieldManager: ScreenTimeShieldManager? = nil
+        shieldManager: ScreenTimeShieldManager? = nil,
+        statsService: StatsService = StatsService()
     ) {
         self.settingsService = settingsService
         self.screenTimeAuthorizationManager = screenTimeAuthorizationManager ?? ScreenTimeAuthorizationManager()
         self.shieldManager = shieldManager ?? ScreenTimeShieldManager()
+        self.statsService = statsService
         loadSettings()
     }
 
@@ -88,6 +91,7 @@ final class HomeViewModel: ObservableObject {
 
     func applyShield(using selection: FamilyActivitySelection) {
         shieldManager.applyShield(using: selection)
+        statsService.recordShieldApplied()
         shieldStatusMessage = "Shield applied."
     }
 
@@ -149,6 +153,7 @@ final class HomeViewModel: ObservableObject {
 
             await MainActor.run {
                 self.clearShield()
+                self.statsService.recordCompletedSession(breakDurationMinutes: self.breakDurationMinutes)
                 self.testSessionState = .completed
                 self.shieldStatusMessage = "Break ended. Access restored."
             }

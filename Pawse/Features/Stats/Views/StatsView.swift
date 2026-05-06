@@ -8,27 +8,43 @@
 import SwiftUI
 
 struct StatsView: View {
+    @StateObject private var viewModel = StatsViewModel()
     @EnvironmentObject private var languageManager: LanguageManager
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    statCard(title: L10n.todaysBreaks, value: "0")
+                    statCard(
+                        title: L10n.todaysBreaks,
+                        value: "\(viewModel.completedSessionsCount)"
+                    )
+
                     statCard(
                         title: L10n.totalBreakMinutes,
                         value: LocalizationHelper.localizedMinutes(
-                            0,
+                            viewModel.totalBreakMinutes,
                             language: languageManager.selectedLanguage
                         )
                     )
-                    statCard(title: L10n.blockedSessions, value: "0")
-                    statCard(title: L10n.mostInterruptedApp, value: "-")
+
+                    statCard(
+                        title: L10n.blockedSessions,
+                        value: "\(viewModel.appliedShieldCount)"
+                    )
+
+                    statCard(
+                        title: L10n.mostInterruptedApp,
+                        value: viewModel.mostInterruptedAppName
+                    )
                 }
                 .padding()
             }
             .background(AppColors.background)
             .navigationTitle(L10n.stats)
+            .onAppear {
+                viewModel.loadStats()
+            }
         }
     }
 
