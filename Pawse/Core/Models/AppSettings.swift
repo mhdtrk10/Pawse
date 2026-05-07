@@ -20,6 +20,7 @@ struct AppSettings: Codable {
     var customPhotoScale: Double
     var customPhotoOffsetX: Double
     var customPhotoOffsetY: Double
+    var customGIFFileName: String?
 
     static let `default` = AppSettings(
         selectedAppsCount: 0,
@@ -31,7 +32,8 @@ struct AppSettings: Codable {
         customPhotoFileName: nil,
         customPhotoScale: 1.0,
         customPhotoOffsetX: 0.0,
-        customPhotoOffsetY: 0.0
+        customPhotoOffsetY: 0.0,
+        customGIFFileName: nil
     )
 
     enum CodingKeys: String, CodingKey {
@@ -45,6 +47,7 @@ struct AppSettings: Codable {
         case customPhotoScale
         case customPhotoOffsetX
         case customPhotoOffsetY
+        case customGIFFileName
     }
 
     init(
@@ -57,7 +60,8 @@ struct AppSettings: Codable {
         customPhotoFileName: String?,
         customPhotoScale: Double,
         customPhotoOffsetX: Double,
-        customPhotoOffsetY: Double
+        customPhotoOffsetY: Double,
+        customGIFFileName: String?
     ) {
         self.selectedAppsCount = selectedAppsCount
         self.dailyLimitMinutes = dailyLimitMinutes
@@ -69,6 +73,7 @@ struct AppSettings: Codable {
         self.customPhotoScale = customPhotoScale
         self.customPhotoOffsetX = customPhotoOffsetX
         self.customPhotoOffsetY = customPhotoOffsetY
+        self.customGIFFileName = customGIFFileName
     }
 
     init(from decoder: Decoder) throws {
@@ -86,6 +91,7 @@ struct AppSettings: Codable {
         customPhotoScale = try container.decodeIfPresent(Double.self, forKey: .customPhotoScale) ?? 1.0
         customPhotoOffsetX = try container.decodeIfPresent(Double.self, forKey: .customPhotoOffsetX) ?? 0.0
         customPhotoOffsetY = try container.decodeIfPresent(Double.self, forKey: .customPhotoOffsetY) ?? 0.0
+        customGIFFileName = try container.decodeIfPresent(String.self, forKey: .customGIFFileName)
     }
 
     var selectedBreakMediaType: BreakMediaType {

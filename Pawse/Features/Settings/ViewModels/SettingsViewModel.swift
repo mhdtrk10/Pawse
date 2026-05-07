@@ -42,7 +42,8 @@ final class SettingsViewModel: ObservableObject {
             customPhotoFileName: nil,
             customPhotoScale: 1.0,
             customPhotoOffsetX: 0.0,
-            customPhotoOffsetY: 0.0
+            customPhotoOffsetY: 0.0,
+            customGIFFileName: nil
         )
 
         settingsService.saveAppSettings(demoSettings)

@@ -42,6 +42,14 @@ final class SettingsService {
         saveAppSettings(settings)
     }
 
+    func switchToBuiltInCatMedia() {
+        var settings = getAppSettings()
+        settings.selectedBreakMediaType = .builtInCat
+        saveAppSettings(settings)
+    }
+
+    // MARK: - Custom Photo
+
     func getCustomPhotoFileName() -> String? {
         getAppSettings().customPhotoFileName
     }
@@ -78,9 +86,23 @@ final class SettingsService {
         settings.customPhotoOffsetY = 0.0
         saveAppSettings(settings)
     }
-    func switchToBuiltInCatMedia() {
+
+    // MARK: - Custom GIF
+
+    func getCustomGIFFileName() -> String? {
+        getAppSettings().customGIFFileName
+    }
+
+    func setCustomGIFFileName(_ fileName: String?) {
+        var settings = getAppSettings()
+        settings.customGIFFileName = fileName
+        saveAppSettings(settings)
+    }
+
+    func clearCustomGIFSettings() {
         var settings = getAppSettings()
         settings.selectedBreakMediaType = .builtInCat
+        settings.customGIFFileName = nil
         saveAppSettings(settings)
     }
 }

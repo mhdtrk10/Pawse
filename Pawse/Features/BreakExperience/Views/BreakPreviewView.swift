@@ -16,7 +16,7 @@ struct BreakPreviewView: View {
     private let catalogService = CatCatalogService()
     private let settingsService = SettingsService()
     private let customPhotoService = CustomPhotoService()
-
+    private let customGIFService = CustomGIFService()
     var body: some View {
         let activeCat = catalogService.fetchCats().first { $0.name == catName }
         let accent = CatThemeHelper.color(for: activeCat?.accentColorKey ?? "orange")
@@ -73,6 +73,10 @@ struct BreakPreviewView: View {
                             Text(languageManager.selectedLanguage == .english ? "Your custom break photo is active." : "Özel mola fotoğrafın aktif.")
                                 .font(.caption)
                                 .foregroundStyle(AppColors.secondaryText)
+                        } else if selectedBreakMediaType == .customGIF {
+                            Text(languageManager.selectedLanguage == .english ? "Your custom break GIF is active." : "Özel mola GIF'in aktif.")
+                                .font(.caption)
+                                .foregroundStyle(AppColors.secondaryText)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -120,6 +124,15 @@ struct BreakPreviewView: View {
     }
 
     private var catMessage: String {
+        if selectedBreakMediaType == .customGIF {
+            switch languageManager.selectedLanguage {
+            case .english:
+                return "Your custom GIF is playing during your break."
+            case .turkish:
+                return "Özel GIF'in molan boyunca oynatılıyor."
+            }
+        }
+
         if selectedBreakMediaType == .customPhoto {
             switch languageManager.selectedLanguage {
             case .english:
@@ -151,20 +164,39 @@ struct BreakPreviewView: View {
 
     @ViewBuilder
     private func breakHeroImage(activeCat: CatItem?, accent: Color) -> some View {
-        if selectedBreakMediaType == .customPhoto,
-           let image = customPhotoService.loadImage(fileName: settingsService.getCustomPhotoFileName()) {
+        if selectedBreakMediaType == .customGIF,
+           let gifURL = customGIFService.loadGIFURL(fileName: settingsService.getCustomGIFFileName()) {
+
+            AnimatedImageView(
+                fileURL: gifURL,
+                contentMode: .scaleAspectFit,
+                cornerRadius: 28,
+                internalScale: 1.0
+            )
+            .frame(width: 240, height: 270)
+            .scaleEffect(0.48)
+            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .overlay(
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(accent.opacity(0.18), lineWidth: 1.5)
+            )
+            .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
+
+        } else if selectedBreakMediaType == .customPhoto,
+                  let image = customPhotoService.loadImage(fileName: settingsService.getCustomPhotoFileName()) {
+
             let transform = settingsService.getCustomPhotoTransform()
 
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 220, height: 260)
+                .frame(width: 170, height: 205)
                 .scaleEffect(transform.scale)
                 .offset(x: transform.offsetX, y: transform.offsetY)
-                .cornerRadius(12)
-                .clipShape(RoundedRectangle(cornerRadius: 32))
+                .frame(width: 195, height: 230)
+                .clipShape(RoundedRectangle(cornerRadius: 28))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 32)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(accent.opacity(0.18), lineWidth: 1.5)
                 )
                 .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
@@ -173,19 +205,28 @@ struct BreakPreviewView: View {
             AnimatedImageView(
                 fileName: gifName,
                 contentMode: .scaleAspectFit,
-                cornerRadius: 32
+                cornerRadius: 28,
+                internalScale: 1.0
             )
-            .frame(width: 270, height: 290)
-            .clipShape(RoundedRectangle(cornerRadius: 32))
+            .frame(width: 170, height: 205)
+            .scaleEffect(0.9)
+            .frame(width: 195, height: 230)
+            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .overlay(
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(accent.opacity(0.18), lineWidth: 1.5)
+            )
+            .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
 
         } else if let activeCat, UIImage(named: activeCat.imageName) != nil {
             Image(activeCat.imageName)
                 .resizable()
-                .scaledToFill()
-                .frame(width: 270, height: 290)
-                .clipShape(RoundedRectangle(cornerRadius: 32))
+                .scaledToFit()
+                .frame(width: 170, height: 205)
+                .frame(width: 195, height: 230)
+                .clipShape(RoundedRectangle(cornerRadius: 28))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 32)
+                    RoundedRectangle(cornerRadius: 28)
                         .stroke(accent.opacity(0.18), lineWidth: 1.5)
                 )
                 .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
@@ -194,9 +235,9 @@ struct BreakPreviewView: View {
             Image(systemName: activeCat?.systemImageName ?? "pawprint.fill")
                 .font(.system(size: 82))
                 .foregroundStyle(accent)
-                .frame(width: 270, height: 290)
+                .frame(width: 195, height: 230)
                 .background(
-                    RoundedRectangle(cornerRadius: 32)
+                    RoundedRectangle(cornerRadius: 28)
                         .fill(accent.opacity(0.10))
                 )
         }

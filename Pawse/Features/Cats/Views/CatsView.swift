@@ -17,7 +17,7 @@ struct CatsView: View {
                 LazyVStack(spacing: 16) {
                     
                     customPhotoCard
-                    
+                    customGIFCard
                     ForEach(viewModel.cats) { cat in
                         catCard(cat: cat)
                     }
@@ -101,26 +101,26 @@ struct CatsView: View {
         }
         .buttonStyle(.plain)
     }
-
+    
     @ViewBuilder
     private func catThumbnail(for cat: CatItem, accent: Color) -> some View {
         if let gifName = cat.animatedGIFName {
             AnimatedImageView(
                 fileName: gifName,
                 contentMode: .scaleAspectFit,
-                cornerRadius: 16
+                cornerRadius: 16,
+                internalScale: 1.0
             )
             .frame(width: 84, height: 84)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.white.opacity(0.001))
-            )
+            .scaleEffect(0.42)
             .clipShape(RoundedRectangle(cornerRadius: 16))
 
         } else if UIImage(named: cat.imageName) != nil {
             Image(cat.imageName)
                 .resizable()
-                .scaledToFit()
+                .scaledToFill()
+                .frame(width: 76, height: 76)
+                .scaleEffect(1.08)
                 .frame(width: 84, height: 84)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
 
@@ -161,6 +161,50 @@ struct CatsView: View {
                             languageManager.selectedLanguage == .english
                             ? "Use your own image as your break companion."
                             : "Kendi görselini mola arkadaşın olarak kullan."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(AppColors.secondaryText)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+    @ViewBuilder
+    private var customGIFCard: some View {
+        NavigationLink {
+            CustomGIFEditorView()
+        } label: {
+            CardContainer {
+                HStack(spacing: 16) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(AppColors.catAccent.opacity(0.10))
+                            .frame(width: 88, height: 88)
+
+                        Image(systemName: "sparkles.tv")
+                            .font(.system(size: 30))
+                            .foregroundStyle(AppColors.catAccent)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(languageManager.selectedLanguage == .english ? "Custom GIF" : "Özel GIF")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+
+                        Text(L10n.premium)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(AppColors.catAccent)
+
+                        Text(
+                            languageManager.selectedLanguage == .english
+                            ? "Use your own animated GIF during breaks."
+                            : "Molalarda kendi animasyonlu GIF'ini kullan."
                         )
                         .font(.caption)
                         .foregroundStyle(AppColors.secondaryText)
