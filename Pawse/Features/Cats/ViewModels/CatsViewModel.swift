@@ -13,17 +13,20 @@ import Foundation
 final class CatsViewModel: ObservableObject {
     @Published var cats: [CatItem] = []
     @Published var selectedCatName: String = "Default Cat"
-    @Published var lockedCat: CatItem?
+    @Published var premiumFeature: PremiumFeature?
 
     private let catalogService: CatCatalogService
     private let selectionService: CatSelectionService
+    private let settingsService: SettingsService
 
     init(
         catalogService: CatCatalogService = CatCatalogService(),
-        selectionService: CatSelectionService = CatSelectionService()
+        selectionService: CatSelectionService = CatSelectionService(),
+        settingsService: SettingsService = SettingsService()
     ) {
         self.catalogService = catalogService
         self.selectionService = selectionService
+        self.settingsService = settingsService
         loadCats()
         loadSelectedCat()
     }
@@ -36,17 +39,22 @@ final class CatsViewModel: ObservableObject {
         selectedCatName = selectionService.getSelectedCatName()
     }
 
-    func handleTap(on cat: CatItem) {
-        if cat.isPremium {
-            lockedCat = cat
-        } else {
+    func handleTap(on cat: CatItem, hasAccess: Bool) {
+        if hasAccess {
             selectCat(cat)
+        } else {
+            premiumFeature = .premiumCat(catID: cat.id, catName: cat.name)
         }
     }
 
     func selectCat(_ cat: CatItem) {
-        guard !cat.isPremium else { return }
         selectionService.selectCat(named: cat.name)
+
+        var settings = settingsService.getAppSettings()
+        settings.activeCatName = cat.name
+        settings.selectedBreakMediaType = .builtInCat
+        settingsService.saveAppSettings(settings)
+
         selectedCatName = cat.name
     }
 
@@ -54,11 +62,7 @@ final class CatsViewModel: ObservableObject {
         selectedCatName == cat.name
     }
 
-    func cat(named name: String) -> CatItem? {
-        cats.first { $0.name == name }
-    }
-
-    func dismissLockedCatSheet() {
-        lockedCat = nil
+    func openPremiumFeature(_ feature: PremiumFeature) {
+        premiumFeature = feature
     }
 }

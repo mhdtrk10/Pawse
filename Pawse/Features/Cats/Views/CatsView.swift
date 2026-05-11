@@ -10,14 +10,19 @@ import SwiftUI
 struct CatsView: View {
     @StateObject private var viewModel = CatsViewModel()
     @EnvironmentObject private var languageManager: LanguageManager
+    @EnvironmentObject private var premiumAccessManager: PremiumAccessManager
+
+    @State private var showCustomPhotoEditor = false
+    @State private var showCustomGIFEditor = false
+    @EnvironmentObject private var storeKitManager: StoreKitManager
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 16) {
-                    
                     customPhotoCard
                     customGIFCard
+
                     ForEach(viewModel.cats) { cat in
                         catCard(cat: cat)
                     }
@@ -28,12 +33,115 @@ struct CatsView: View {
             .navigationTitle(L10n.cats)
             .onAppear {
                 viewModel.loadSelectedCat()
+                premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
             }
-            .sheet(item: $viewModel.lockedCat) { cat in
-                PremiumCatSheetView(cat: cat)
+            .sheet(item: $viewModel.premiumFeature) { feature in
+                PremiumFeatureSheetView(feature: feature)
                     .environmentObject(languageManager)
+                    .environmentObject(premiumAccessManager)
+            }
+            .navigationDestination(isPresented: $showCustomPhotoEditor) {
+                CustomPhotoEditorView()
+            }
+            .navigationDestination(isPresented: $showCustomGIFEditor) {
+                CustomGIFEditorView()
+            }
+            
+        }
+    }
+
+    @ViewBuilder
+    private var customPhotoCard: some View {
+        Button {
+            if premiumAccessManager.hasAccess(to: .customPhoto) {
+                showCustomPhotoEditor = true
+            } else {
+                viewModel.openPremiumFeature(.customPhoto)
+            }
+        } label: {
+            CardContainer {
+                HStack(spacing: 16) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(AppColors.primary.opacity(0.10))
+                            .frame(width: 88, height: 88)
+
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .font(.system(size: 30))
+                            .foregroundStyle(AppColors.primary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(languageManager.selectedLanguage == .english ? "Custom Photo" : "Özel Fotoğraf")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+
+                        premiumBadge(accent: AppColors.primary)
+
+                        Text(
+                            languageManager.selectedLanguage == .english
+                            ? "Use your own image as your break companion."
+                            : "Kendi görselini mola arkadaşın olarak kullan."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(AppColors.secondaryText)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: premiumAccessManager.hasAccess(to: .customPhoto) ? "chevron.right" : "lock.fill")
+                        .foregroundStyle(AppColors.secondaryText)
+                }
             }
         }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var customGIFCard: some View {
+        Button {
+            if premiumAccessManager.hasAccess(to: .customGIF) {
+                showCustomGIFEditor = true
+            } else {
+                viewModel.openPremiumFeature(.customGIF)
+            }
+        } label: {
+            CardContainer {
+                HStack(spacing: 16) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(AppColors.catAccent.opacity(0.10))
+                            .frame(width: 88, height: 88)
+
+                        Image(systemName: "sparkles.tv")
+                            .font(.system(size: 30))
+                            .foregroundStyle(AppColors.catAccent)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(languageManager.selectedLanguage == .english ? "Custom GIF" : "Özel GIF")
+                            .font(.headline)
+                            .foregroundStyle(.primary)
+
+                        premiumBadge(accent: AppColors.catAccent)
+
+                        Text(
+                            languageManager.selectedLanguage == .english
+                            ? "Use your own animated GIF during breaks."
+                            : "Molalarda kendi animasyonlu GIF'ini kullan."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(AppColors.secondaryText)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: premiumAccessManager.hasAccess(to: .customGIF) ? "chevron.right" : "lock.fill")
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
@@ -41,10 +149,10 @@ struct CatsView: View {
         let accent = CatThemeHelper.color(for: cat.accentColorKey)
 
         Button {
-            viewModel.handleTap(on: cat)
+            viewModel.handleTap(on: cat, hasAccess: premiumAccessManager.hasAccess(to: cat))
         } label: {
             CardContainer {
-                HStack(spacing: 16) {
+                HStack(spacing: 18) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(accent.opacity(0.10))
@@ -58,10 +166,14 @@ struct CatsView: View {
                             .font(.headline)
                             .foregroundStyle(.primary)
 
-                        Text(cat.isPremium ? L10n.premium : L10n.free)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(accent)
-                        
+                        if cat.isPremium {
+                            premiumBadge(accent: accent)
+                        } else {
+                            Text(L10n.free)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(accent)
+                        }
+
                         if cat.animatedGIFName != nil {
                             Text(languageManager.selectedLanguage == .english ? "Animated" : "Animasyonlu")
                                 .font(.caption2.weight(.semibold))
@@ -76,7 +188,7 @@ struct CatsView: View {
 
                     Spacer()
 
-                    if cat.isPremium {
+                    if cat.isPremium && !premiumAccessManager.hasAccess(to: cat) {
                         Image(systemName: "lock.fill")
                             .foregroundStyle(AppColors.secondaryText)
                     } else if viewModel.isSelected(cat) {
@@ -101,7 +213,14 @@ struct CatsView: View {
         }
         .buttonStyle(.plain)
     }
-    
+
+    @ViewBuilder
+    private func premiumBadge(accent: Color) -> some View {
+        Text(L10n.premium)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(accent)
+    }
+
     @ViewBuilder
     private func catThumbnail(for cat: CatItem, accent: Color) -> some View {
         if let gifName = cat.animatedGIFName {
@@ -112,7 +231,7 @@ struct CatsView: View {
                 internalScale: 1.0
             )
             .frame(width: 84, height: 84)
-            .scaleEffect(0.42)
+            .scaleEffect(0.32)
             .clipShape(RoundedRectangle(cornerRadius: 16))
 
         } else if UIImage(named: cat.imageName) != nil {
@@ -131,97 +250,10 @@ struct CatsView: View {
                 .frame(width: 84, height: 84)
         }
     }
-    @ViewBuilder
-    private var customPhotoCard: some View {
-        NavigationLink {
-            CustomPhotoEditorView()
-        } label: {
-            CardContainer {
-                HStack(spacing: 16) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(AppColors.primary.opacity(0.10))
-                            .frame(width: 88, height: 88)
-
-                        Image(systemName: "photo.on.rectangle.angled")
-                            .font(.system(size: 30))
-                            .foregroundStyle(AppColors.primary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(languageManager.selectedLanguage == .english ? "Custom Photo" : "Özel Fotoğraf")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-
-                        Text(L10n.premium)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(AppColors.primary)
-
-                        Text(
-                            languageManager.selectedLanguage == .english
-                            ? "Use your own image as your break companion."
-                            : "Kendi görselini mola arkadaşın olarak kullan."
-                        )
-                        .font(.caption)
-                        .foregroundStyle(AppColors.secondaryText)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(AppColors.secondaryText)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-    }
-    @ViewBuilder
-    private var customGIFCard: some View {
-        NavigationLink {
-            CustomGIFEditorView()
-        } label: {
-            CardContainer {
-                HStack(spacing: 16) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 18)
-                            .fill(AppColors.catAccent.opacity(0.10))
-                            .frame(width: 88, height: 88)
-
-                        Image(systemName: "sparkles.tv")
-                            .font(.system(size: 30))
-                            .foregroundStyle(AppColors.catAccent)
-                    }
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(languageManager.selectedLanguage == .english ? "Custom GIF" : "Özel GIF")
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-
-                        Text(L10n.premium)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(AppColors.catAccent)
-
-                        Text(
-                            languageManager.selectedLanguage == .english
-                            ? "Use your own animated GIF during breaks."
-                            : "Molalarda kendi animasyonlu GIF'ini kullan."
-                        )
-                        .font(.caption)
-                        .foregroundStyle(AppColors.secondaryText)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .foregroundStyle(AppColors.secondaryText)
-                }
-            }
-        }
-        .buttonStyle(.plain)
-    }
 }
 
 #Preview {
     CatsView()
         .environmentObject(LanguageManager())
+        .environmentObject(PremiumAccessManager())
 }

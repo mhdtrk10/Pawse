@@ -13,6 +13,9 @@ final class UserDefaultsManager {
     private init() {}
 
     private let hasSeenOnboardingKey = "hasSeenOnboarding"
+    // ADDED FOR LOCAL NOTIFICATIONS - START
+    private let hasRequestedNotificationPermissionKey = "hasRequestedNotificationPermission"
+    // ADDED FOR LOCAL NOTIFICATIONS - END
 
     var hasSeenOnboarding: Bool {
         get {
@@ -22,6 +25,17 @@ final class UserDefaultsManager {
             UserDefaults.standard.set(newValue, forKey: hasSeenOnboardingKey)
         }
     }
+    
+    // ADDED FOR LOCAL NOTIFICATIONS - START
+    var hasRequestedNotificationPermission: Bool {
+        get {
+            UserDefaults.standard.bool(forKey: hasRequestedNotificationPermissionKey)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: hasRequestedNotificationPermissionKey)
+        }
+    }
+    // ADDED FOR LOCAL NOTIFICATIONS - END
 
     var selectedLanguage: AppLanguage {
         get {
@@ -33,6 +47,37 @@ final class UserDefaultsManager {
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: LocalStorageKeys.selectedLanguage)
+        }
+    }
+    var isMonthlyPremiumActive: Bool {
+        get {
+            UserDefaults.standard.bool(forKey: LocalStorageKeys.monthlyPremiumActive)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: LocalStorageKeys.monthlyPremiumActive)
+        }
+    }
+    var soundEnabled: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: LocalStorageKeys.soundEnabled) == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: LocalStorageKeys.soundEnabled)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: LocalStorageKeys.soundEnabled)
+        }
+    }
+
+    var hapticsEnabled: Bool {
+        get {
+            if UserDefaults.standard.object(forKey: LocalStorageKeys.hapticsEnabled) == nil {
+                return true
+            }
+            return UserDefaults.standard.bool(forKey: LocalStorageKeys.hapticsEnabled)
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: LocalStorageKeys.hapticsEnabled)
         }
     }
 
@@ -78,5 +123,40 @@ final class UserDefaultsManager {
             print("Failed to load stats summary: \(error)")
             return .default
         }
+    }
+    func saveActiveSessionSnapshot(_ snapshot: ActiveSessionSnapshot) {
+        do {
+            let data = try JSONEncoder().encode(snapshot)
+            UserDefaults.standard.set(data, forKey: LocalStorageKeys.activeSessionSnapshot)
+        } catch {
+            print("Failed to save active session snapshot: \(error)")
+        }
+    }
+
+    func loadActiveSessionSnapshot() -> ActiveSessionSnapshot? {
+        guard let data = UserDefaults.standard.data(forKey: LocalStorageKeys.activeSessionSnapshot) else {
+            return nil
+        }
+
+        do {
+            return try JSONDecoder().decode(ActiveSessionSnapshot.self, from: data)
+        } catch {
+            print("Failed to load active session snapshot: \(error)")
+            return nil
+        }
+    }
+
+    func clearActiveSessionSnapshot() {
+        UserDefaults.standard.removeObject(forKey: LocalStorageKeys.activeSessionSnapshot)
+    }
+    
+
+    func saveUnlockedCatIDs(_ ids: Set<String>) {
+        UserDefaults.standard.set(Array(ids), forKey: LocalStorageKeys.unlockedCatIDs)
+    }
+
+    func loadUnlockedCatIDs() -> Set<String> {
+        let array = UserDefaults.standard.stringArray(forKey: LocalStorageKeys.unlockedCatIDs) ?? []
+        return Set(array)
     }
 }

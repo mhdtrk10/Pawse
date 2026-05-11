@@ -11,14 +11,16 @@ import Foundation
 
 @MainActor
 final class SettingsViewModel: ObservableObject {
-    @Published var soundEnabled: Bool = true
-    @Published var hapticsEnabled: Bool = true
+    @Published var soundEnabled: Bool
+    @Published var hapticsEnabled: Bool
     @Published var selectedLanguage: AppLanguage = .english
 
     private let settingsService: SettingsService
 
     init(settingsService: SettingsService = SettingsService()) {
         self.settingsService = settingsService
+        self.soundEnabled = settingsService.getSoundEnabled()
+        self.hapticsEnabled = settingsService.getHapticsEnabled()
         self.selectedLanguage = settingsService.getSelectedLanguage()
     }
 
@@ -52,5 +54,15 @@ final class SettingsViewModel: ObservableObject {
     func updateLanguage(_ language: AppLanguage) {
         selectedLanguage = language
         settingsService.saveSelectedLanguage(language)
+    }
+
+    func updateSoundEnabled(_ isEnabled: Bool) {
+        soundEnabled = isEnabled
+        settingsService.saveSoundEnabled(isEnabled)
+    }
+
+    func updateHapticsEnabled(_ isEnabled: Bool) {
+        hapticsEnabled = isEnabled
+        settingsService.saveHapticsEnabled(isEnabled)
     }
 }

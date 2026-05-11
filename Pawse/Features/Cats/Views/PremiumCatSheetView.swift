@@ -23,9 +23,11 @@ struct PremiumCatSheetView: View {
                 ZStack {
                     Circle()
                         .fill(accent.opacity(0.15))
-                        .frame(width: 210, height: 210)
+                        .frame(width: 420, height: 420)  // DOUBLE original (210 x 2)
 
                     premiumCatImage(accent: accent)
+                    
+                    
                 }
 
                 VStack(spacing: 10) {
@@ -89,32 +91,34 @@ struct PremiumCatSheetView: View {
     @ViewBuilder
     private func premiumCatImage(accent: Color) -> some View {
         if let gifName = cat.animatedGIFName {
+            // DOUBLE original size (160 x 2 = 320)
             AnimatedImageView(
                 fileName: gifName,
-                contentMode: .scaleAspectFill,
-                cornerRadius: 24
+                contentMode: .scaleAspectFit,
+                cornerRadius: 40,
+                internalScale: 1.0
             )
-            .frame(width: 160, height: 160)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .frame(width: 320, height: 320)  // DOUBLE original (160 x 2)
+            .clipShape(RoundedRectangle(cornerRadius: 40))
             .overlay(
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(accent.opacity(0.18), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 40)
+                    .stroke(accent.opacity(0.18), lineWidth: 2)
             )
         } else if UIImage(named: cat.imageName) != nil {
             Image(cat.imageName)
                 .resizable()
                 .scaledToFill()
-                .frame(width: 160, height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .frame(width: 320, height: 320)  // DOUBLE original (160 x 2)
+                .clipShape(RoundedRectangle(cornerRadius: 40))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(accent.opacity(0.18), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 40)
+                        .stroke(accent.opacity(0.18), lineWidth: 2)
                 )
         } else {
             Image(systemName: cat.systemImageName)
-                .font(.system(size: 54))
+                .font(.system(size: 108))  // DOUBLE original (54 x 2)
                 .foregroundStyle(accent)
-                .frame(width: 160, height: 160)
+                .frame(width: 320, height: 320)  // DOUBLE original (160 x 2)
         }
     }
     

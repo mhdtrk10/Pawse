@@ -12,7 +12,7 @@ struct HomeView: View {
     @StateObject private var viewModel = HomeViewModel()
     @StateObject private var selectionStore = ScreenTimeSelectionStore()
     @EnvironmentObject private var languageManager: LanguageManager
-
+    @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -109,6 +109,7 @@ struct HomeView: View {
             .onAppear {
                 viewModel.loadSettings()
                 viewModel.updateSelectedAppsCount(from: selectionStore.familyActivitySelection)
+                viewModel.restoreSessionIfNeeded(using: selectionStore.familyActivitySelection)
             }
             .onChange(of: languageManager.selectedLanguage) { _, _ in
                 viewModel.refreshLocalization()
@@ -127,6 +128,12 @@ struct HomeView: View {
                     remainingSeconds: viewModel.currentBreakRemainingSeconds
                 )
                 .environmentObject(languageManager)
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    viewModel.loadSettings()
+                    viewModel.handleAppDidBecomeActive(using: selectionStore.familyActivitySelection)
+                }
             }
         }
     }

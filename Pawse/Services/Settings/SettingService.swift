@@ -105,4 +105,19 @@ final class SettingsService {
         settings.customGIFFileName = nil
         saveAppSettings(settings)
     }
+    func getSoundEnabled() -> Bool {
+        storage.soundEnabled
+    }
+
+    func saveSoundEnabled(_ isEnabled: Bool) {
+        storage.soundEnabled = isEnabled
+    }
+
+    func getHapticsEnabled() -> Bool {
+        storage.hapticsEnabled
+    }
+
+    func saveHapticsEnabled(_ isEnabled: Bool) {
+        storage.hapticsEnabled = isEnabled
+    }
 }

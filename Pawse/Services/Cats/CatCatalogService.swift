@@ -77,7 +77,7 @@ final class CatCatalogService {
                 systemImageName: "sparkles",
                 imageName: "space_cat_image",
                 animatedGIFName: "cat_astronaut.gif",
-                isPremium: false,
+                isPremium: true,
                 accentColorKey: "purple",
                 moodMessageEN: "A cosmic pause from the feed.",
                 moodMessageTR: "Akıştan kozmik bir mola."

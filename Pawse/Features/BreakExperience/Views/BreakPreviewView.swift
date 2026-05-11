@@ -39,7 +39,7 @@ struct BreakPreviewView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 32)
                         .fill(accent.opacity(0.12))
-                        .frame(width: 280, height: 300)
+                        .frame(width: 240, height: 280)
 
                     breakHeroImage(activeCat: activeCat, accent: accent)
                 }
@@ -170,14 +170,18 @@ struct BreakPreviewView: View {
             AnimatedImageView(
                 fileURL: gifURL,
                 contentMode: .scaleAspectFit,
-                cornerRadius: 28,
+                cornerRadius: 30,
                 internalScale: 1.0
             )
-            .frame(width: 240, height: 270)
-            .scaleEffect(0.48)
-            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .frame(width: 220, height: 260)
+            .scaleEffect(0.42)
+            .background(
+                RoundedRectangle(cornerRadius: 30)
+                    .fill(Color.white.opacity(0.001))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 30))
             .overlay(
-                RoundedRectangle(cornerRadius: 28)
+                RoundedRectangle(cornerRadius: 30)
                     .stroke(accent.opacity(0.18), lineWidth: 1.5)
             )
             .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
@@ -189,14 +193,13 @@ struct BreakPreviewView: View {
 
             Image(uiImage: image)
                 .resizable()
-                .scaledToFit()
-                .frame(width: 170, height: 205)
+                .scaledToFill()
                 .scaleEffect(transform.scale)
                 .offset(x: transform.offsetX, y: transform.offsetY)
-                .frame(width: 195, height: 230)
-                .clipShape(RoundedRectangle(cornerRadius: 28))
+                .frame(width: 220, height: 260)
+                .clipShape(RoundedRectangle(cornerRadius: 30))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 28)
+                    RoundedRectangle(cornerRadius: 30)
                         .stroke(accent.opacity(0.18), lineWidth: 1.5)
                 )
                 .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
@@ -205,15 +208,18 @@ struct BreakPreviewView: View {
             AnimatedImageView(
                 fileName: gifName,
                 contentMode: .scaleAspectFit,
-                cornerRadius: 28,
+                cornerRadius: 30,
                 internalScale: 1.0
             )
-            .frame(width: 170, height: 205)
-            .scaleEffect(0.9)
-            .frame(width: 195, height: 230)
-            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .frame(width: 220, height: 260)
+            .scaleEffect(0.42)
+            .background(
+                RoundedRectangle(cornerRadius: 30)
+                    .fill(Color.white.opacity(0.001))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 30))
             .overlay(
-                RoundedRectangle(cornerRadius: 28)
+                RoundedRectangle(cornerRadius: 30)
                     .stroke(accent.opacity(0.18), lineWidth: 1.5)
             )
             .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
@@ -221,12 +227,12 @@ struct BreakPreviewView: View {
         } else if let activeCat, UIImage(named: activeCat.imageName) != nil {
             Image(activeCat.imageName)
                 .resizable()
-                .scaledToFit()
-                .frame(width: 170, height: 205)
-                .frame(width: 195, height: 230)
-                .clipShape(RoundedRectangle(cornerRadius: 28))
+                .scaledToFill()
+                .scaleEffect(1.0)
+                .frame(width: 220, height: 260)
+                .clipShape(RoundedRectangle(cornerRadius: 30))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 28)
+                    RoundedRectangle(cornerRadius: 30)
                         .stroke(accent.opacity(0.18), lineWidth: 1.5)
                 )
                 .shadow(color: .black.opacity(0.10), radius: 12, x: 0, y: 6)
@@ -235,9 +241,9 @@ struct BreakPreviewView: View {
             Image(systemName: activeCat?.systemImageName ?? "pawprint.fill")
                 .font(.system(size: 82))
                 .foregroundStyle(accent)
-                .frame(width: 195, height: 230)
+                .frame(width: 210, height: 248)
                 .background(
-                    RoundedRectangle(cornerRadius: 28)
+                    RoundedRectangle(cornerRadius: 30)
                         .fill(accent.opacity(0.10))
                 )
         }
