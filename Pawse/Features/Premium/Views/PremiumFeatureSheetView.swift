@@ -20,54 +20,128 @@ struct PremiumFeatureSheetView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                
-
-                heroSection
-                    //.padding(.bottom, 12)
-                
-                Spacer()
-
-                VStack(spacing: 10) {
-                    Text(title)
-                        .font(.title.bold())
-                        .multilineTextAlignment(.center)
-
-                    Text(message)
-                        .font(.body)
-                        .foregroundStyle(AppColors.secondaryText)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-                
-
-                pricingCard
+            ScrollView {
+                VStack(spacing: 16) {
+                    
+                    // Hero Section
+                    heroSection
+                        .padding(.top, 12)
+                    
+                    // Title - Show cat name or premium title
+                    if let cat = selectedCat {
+                        Text(cat.name)
+                            .font(.title.bold())
+                            .padding(.top, 4)
+                    } else {
+                        Text("Pawse Premium")
+                            .font(.title.bold())
+                            .padding(.top, 4)
+                    }
+                    
+                    // Subscription Type & Price (only for single cat unlocks)
+                    if let singleProduct = storeKitManager.product(for: feature.singleUnlockProductID ?? "") {
+                        HStack(spacing: 8) {
+                            Text(singleProduct.displayPrice)
+                                .font(.title2.bold())
+                                .foregroundStyle(AppColors.primary)
+                            
+                            Text("•")
+                                .foregroundStyle(AppColors.secondaryText)
+                            
+                            Text(languageManager.selectedLanguage == .english ? "One-time purchase" : "Tek seferlik")
+                                .font(.subheadline)
+                                .foregroundStyle(AppColors.secondaryText)
+                        }
+                    } else {
+                        // For custom photo/gif - show feature-specific icon
+                        Image(systemName: featureIcon)
+                            .font(.system(size: 60))
+                            .foregroundStyle(AppColors.primary.gradient)
+                            .padding(.vertical, 8)
+                    }
+                    
+                    // Features List - Compact spacing
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text(languageManager.selectedLanguage == .english ? "Includes:" : "İçerikler:")
+                            .font(.subheadline.weight(.semibold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        FeatureRow(
+                            icon: "sparkles",
+                            text: languageManager.selectedLanguage == .english 
+                                ? "Unlock premium cat animations" 
+                                : "Premium kedi animasyonlarının kilidini aç"
+                        )
+                        
+                        FeatureRow(
+                            icon: "photo",
+                            text: languageManager.selectedLanguage == .english 
+                                ? "Custom photo & GIF support" 
+                                : "Özel fotoğraf ve GIF desteği"
+                        )
+                        
+                        FeatureRow(
+                            icon: "star.fill",
+                            text: languageManager.selectedLanguage == .english 
+                                ? "Access all premium cats" 
+                                : "Tüm premium kedilere erişim"
+                        )
+                        
+                        FeatureRow(
+                            icon: "crown.fill",
+                            text: languageManager.selectedLanguage == .english 
+                                ? "Exclusive themes and colors" 
+                                : "Özel temalar ve renkler"
+                        )
+                    }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                    )
                     .padding(.horizontal)
-
-                VStack(spacing: 12) {
-                    if let singleProductID = feature.singleUnlockProductID {
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                // CTA Buttons - Always visible at bottom
+                VStack(spacing: 8) {
+                    // Single Unlock Button (if available for this cat) - ONE-TIME PURCHASE
+                    if let singleProductID = feature.singleUnlockProductID,
+                       let singleProduct = storeKitManager.product(for: singleProductID) {
                         Button {
                             Task {
                                 let success = await storeKitManager.purchase(productID: singleProductID)
                                 if success {
                                     premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
-
                                     if case .premiumCat(let catID, _) = feature {
                                         premiumAccessManager.unlockCatForTesting(catID)
                                     }
-
                                     dismiss()
                                 }
                             }
                         } label: {
-                            Text(singleUnlockButtonTitle)
-                                .frame(maxWidth: .infinity)
+                            Group {
+                                if storeKitManager.isPurchaseInProgress {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    HStack(spacing: 8) {
+                                        Text(languageManager.selectedLanguage == .english ? "Unlock This Cat" : "Bu Kediyi Aç")
+                                            .font(.callout.weight(.semibold))
+                                        Text(singleProduct.displayPrice)
+                                            .font(.callout.weight(.bold))
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
                         }
-                        .buttonStyle(PrimaryButtonStyle())
-                        .padding(.horizontal)
+                        .buttonStyle(.borderedProminent)
+                        .tint(AppColors.primary)
                         .disabled(storeKitManager.isPurchaseInProgress)
                     }
-
+                    
+                    // Monthly Premium Button - SUBSCRIPTION
                     Button {
                         Task {
                             let success = await storeKitManager.purchase(productID: feature.monthlyProductID)
@@ -78,31 +152,88 @@ struct PremiumFeatureSheetView: View {
                             }
                         }
                     } label: {
-                        Text(monthlyUnlockButtonTitle)
-                            .frame(maxWidth: .infinity)
+                        Group {
+                            if storeKitManager.isPurchaseInProgress {
+                                ProgressView()
+                            } else {
+                                if let monthlyProduct = monthlyProduct {
+                                    HStack(spacing: 8) {
+                                        Text(languageManager.selectedLanguage == .english ? "Monthly Premium" : "Aylık Premium")
+                                            .font(.subheadline.weight(.medium))
+                                        Text(monthlyProduct.displayPrice + " / " + (languageManager.selectedLanguage == .english ? "mo" : "ay"))
+                                            .font(.subheadline.weight(.semibold))
+                                    }
+                                } else {
+                                    Text(languageManager.selectedLanguage == .english ? "Monthly Premium" : "Aylık Premium")
+                                        .font(.subheadline.weight(.medium))
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
                     }
-                    .buttonStyle(PrimaryButtonStyle())
-                    .padding(.horizontal)
+                    .buttonStyle(.bordered)
+                    .tint(AppColors.primary)
                     .disabled(storeKitManager.isPurchaseInProgress)
-
-                    if storeKitManager.isPurchaseInProgress {
-                        ProgressView()
+                    
+                    HStack(spacing: 16) {
+                        Button {
+                            Task {
+                                await storeKitManager.restorePurchases()
+                                premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
+                            }
+                        } label: {
+                            Text(languageManager.selectedLanguage == .english ? "Restore Purchases" : "Satın Almaları Geri Yükle")
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(AppColors.primary)
+                        }
+                        .disabled(storeKitManager.isPurchaseInProgress)
+                        
+                        Button {
+                            dismiss()
+                        } label: {
+                            Text(languageManager.selectedLanguage == .english ? "Maybe Later" : "Daha Sonra")
+                                .font(.caption)
+                                .foregroundStyle(AppColors.secondaryText)
+                        }
                     }
-
+                    
+                    // Legal Links
+                    HStack(spacing: 12) {
+                        Link(destination: URL(string: "https://mhdtrk10.github.io")!) {
+                            Text(languageManager.selectedLanguage == .english ? "Privacy Policy" : "Gizlilik Politikası")
+                                .font(.caption2)
+                                .foregroundStyle(AppColors.secondaryText)
+                        }
+                        
+                        Text("•")
+                            .font(.caption2)
+                            .foregroundStyle(AppColors.secondaryText)
+                        
+                        Link(destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) {
+                            Text(languageManager.selectedLanguage == .english ? "Terms of Use" : "Kullanım Koşulları")
+                                .font(.caption2)
+                                .foregroundStyle(AppColors.secondaryText)
+                        }
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+                .background(.regularMaterial)
+            }
+            .navigationTitle("Premium")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         dismiss()
                     } label: {
-                        Text(languageManager.selectedLanguage == .english ? "Maybe Later" : "Daha Sonra")
-                            .font(.subheadline)
+                        Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(AppColors.secondaryText)
                     }
                 }
-
-                
             }
-            .padding()
-            .navigationTitle("Premium")
-            .navigationBarTitleDisplayMode(.inline)
             .alert(
                 languageManager.selectedLanguage == .english ? "Purchase Error" : "Satın Alma Hatası",
                 isPresented: Binding(
@@ -170,48 +301,6 @@ struct PremiumFeatureSheetView: View {
         }
     }
 
-    @ViewBuilder
-    private var pricingCard: some View {
-        CardContainer {
-            VStack(alignment: .leading, spacing: 14) {
-                if let singleProduct = singleUnlockProduct {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(languageManager.selectedLanguage == .english ? "Single Unlock" : "Tekil Açma")
-                            .font(.headline)
-
-                        Text(singleProduct.displayPrice)
-                            .font(.title3.bold())
-                            .foregroundStyle(AppColors.primary)
-
-                        Text(languageManager.selectedLanguage == .english ? "Unlock only this cat." : "Sadece bu kedinin kilidini aç.")
-                            .font(.caption)
-                            .foregroundStyle(AppColors.secondaryText)
-                    }
-                }
-
-                if let monthlyProduct = monthlyProduct {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(languageManager.selectedLanguage == .english ? "Monthly Premium" : "Aylık Premium")
-                            .font(.headline)
-
-                        Text(monthlyProduct.displayPrice)
-                            .font(.title3.bold())
-                            .foregroundStyle(AppColors.primary)
-
-                        Text(
-                            languageManager.selectedLanguage == .english
-                            ? "All premium cats + Custom Photo + Custom GIF"
-                            : "Tüm premium kediler + Özel Fotoğraf + Özel GIF"
-                        )
-                        .font(.caption)
-                        .foregroundStyle(AppColors.secondaryText)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
     private var selectedCat: CatItem? {
         switch feature {
         case .premiumCat(let catID, _):
@@ -228,46 +317,39 @@ struct PremiumFeatureSheetView: View {
         return AppColors.primary
     }
 
-    private var title: String {
-        switch languageManager.selectedLanguage {
-        case .english: return feature.titleEN
-        case .turkish: return feature.titleTR
-        }
-    }
-
-    private var message: String {
-        switch languageManager.selectedLanguage {
-        case .english: return feature.messageEN
-        case .turkish: return feature.messageTR
-        }
-    }
-
-    private var singleUnlockProduct: Product? {
-        guard let id = feature.singleUnlockProductID else { return nil }
-        return storeKitManager.product(for: id)
-    }
-
     private var monthlyProduct: Product? {
         storeKitManager.product(for: feature.monthlyProductID)
     }
-
-    private var singleUnlockButtonTitle: String {
-        let price = singleUnlockProduct?.displayPrice ?? "$0.99"
-        switch languageManager.selectedLanguage {
-        case .english:
-            return "Unlock This Cat for \(price)"
-        case .turkish:
-            return "Bu Kediyi \(price) ile Aç"
+    
+    private var featureIcon: String {
+        switch feature {
+        case .customPhoto:
+            return "photo.badge.plus"
+        case .customGIF:
+            return "photo.on.rectangle.angled"
+        default:
+            return "sparkles"
         }
     }
+}
 
-    private var monthlyUnlockButtonTitle: String {
-        let price = monthlyProduct?.displayPrice ?? "$3.99"
-        switch languageManager.selectedLanguage {
-        case .english:
-            return "Get Monthly Premium for \(price)"
-        case .turkish:
-            return "\(price) ile Aylık Premium Al"
+// MARK: - Feature Row Component
+
+struct FeatureRow: View {
+    let icon: String
+    let text: String
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(AppColors.primary)
+                .frame(width: 18)
+            
+            Text(text)
+                .font(.caption)
+                .foregroundStyle(Color.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
