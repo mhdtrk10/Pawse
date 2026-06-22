@@ -68,6 +68,7 @@ struct RootView: View {
 /// Temporary inline view for notification permission
 struct NotificationPermissionPromptView: View {
     @Binding var hasRequestedPermission: Bool
+    @Environment(\.dismiss) private var dismiss
     @State private var isLoading = false
     
     var body: some View {
@@ -92,16 +93,21 @@ struct NotificationPermissionPromptView: View {
                     isLoading = true
                     Task {
                         await requestNotificationPermission()
-                        hasRequestedPermission = true
-                        UserDefaultsManager.shared.hasRequestedNotificationPermission = true
+                        await MainActor.run {
+                            hasRequestedPermission = true
+                            UserDefaultsManager.shared.hasRequestedNotificationPermission = true
+                            dismiss()
+                        }
                     }
                 } label: {
                     if isLoading {
                         ProgressView()
                             .tint(.white)
+                            .frame(maxWidth: .infinity)
                     } else {
                         Text("Enable Notifications")
                             .font(.headline)
+                            .frame(maxWidth: .infinity)
                     }
                 }
                 .foregroundStyle(.white)
@@ -114,6 +120,7 @@ struct NotificationPermissionPromptView: View {
                 Button {
                     hasRequestedPermission = true
                     UserDefaultsManager.shared.hasRequestedNotificationPermission = true
+                    dismiss()
                 } label: {
                     Text("Skip for Now")
                         .font(.subheadline)

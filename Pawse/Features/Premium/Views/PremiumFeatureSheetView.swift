@@ -8,6 +8,11 @@
 import SwiftUI
 import StoreKit
 
+enum SubscriptionPlan: String {
+    case monthly
+    case yearly
+}
+
 struct PremiumFeatureSheetView: View {
     let feature: PremiumFeature
 
@@ -16,52 +21,33 @@ struct PremiumFeatureSheetView: View {
     @EnvironmentObject private var storeKitManager: StoreKitManager
     @Environment(\.dismiss) private var dismiss
 
+    @State private var selectedPlan: SubscriptionPlan = .yearly
     private let catalogService = CatCatalogService()
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 24) {
                     
                     // Hero Section
                     heroSection
                         .padding(.top, 12)
                     
-                    // Title - Show cat name or premium title
-                    if let cat = selectedCat {
-                        Text(cat.name)
-                            .font(.title.bold())
-                            .padding(.top, 4)
-                    } else {
-                        Text("Pawse Premium")
-                            .font(.title.bold())
-                            .padding(.top, 4)
-                    }
+                    // Title
+                    Text("Pawse Premium")
+                        .font(.title.bold())
                     
-                    // Subscription Type & Price (only for single cat unlocks)
-                    if let singleProduct = storeKitManager.product(for: feature.singleUnlockProductID ?? "") {
-                        HStack(spacing: 8) {
-                            Text(singleProduct.displayPrice)
-                                .font(.title2.bold())
-                                .foregroundStyle(AppColors.primary)
-                            
-                            Text("•")
-                                .foregroundStyle(AppColors.secondaryText)
-                            
-                            Text(languageManager.selectedLanguage == .english ? "One-time purchase" : "Tek seferlik")
-                                .font(.subheadline)
-                                .foregroundStyle(AppColors.secondaryText)
-                        }
-                    } else {
-                        // For custom photo/gif - show feature-specific icon
-                        Image(systemName: featureIcon)
-                            .font(.system(size: 60))
-                            .foregroundStyle(AppColors.primary.gradient)
-                            .padding(.vertical, 8)
+                    // Plan Toggle with Save Badge
+                    VStack(spacing: 12) {
+                        planToggle
+                        
+                        // Price Display
+                        priceDisplay
                     }
+                    .padding(.horizontal)
                     
-                    // Features List - Compact spacing
-                    VStack(alignment: .leading, spacing: 10) {
+                    // Features List
+                    VStack(alignment: .leading, spacing: 12) {
                         Text(languageManager.selectedLanguage == .english ? "Includes:" : "İçerikler:")
                             .font(.subheadline.weight(.semibold))
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -94,133 +80,18 @@ struct PremiumFeatureSheetView: View {
                                 : "Özel temalar ve renkler"
                         )
                     }
-                    .padding(12)
+                    .padding(16)
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: 16)
                             .fill(Color(.systemGray6))
                     )
                     .padding(.horizontal)
                 }
+                .padding(.bottom, 100)
             }
+            .background(AppColors.background)
             .safeAreaInset(edge: .bottom) {
-                // CTA Buttons - Always visible at bottom
-                VStack(spacing: 8) {
-                    // Single Unlock Button (if available for this cat) - ONE-TIME PURCHASE
-                    if let singleProductID = feature.singleUnlockProductID,
-                       let singleProduct = storeKitManager.product(for: singleProductID) {
-                        Button {
-                            Task {
-                                let success = await storeKitManager.purchase(productID: singleProductID)
-                                if success {
-                                    premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
-                                    if case .premiumCat(let catID, _) = feature {
-                                        premiumAccessManager.unlockCatForTesting(catID)
-                                    }
-                                    dismiss()
-                                }
-                            }
-                        } label: {
-                            Group {
-                                if storeKitManager.isPurchaseInProgress {
-                                    ProgressView()
-                                        .tint(.white)
-                                } else {
-                                    HStack(spacing: 8) {
-                                        Text(languageManager.selectedLanguage == .english ? "Unlock This Cat" : "Bu Kediyi Aç")
-                                            .font(.callout.weight(.semibold))
-                                        Text(singleProduct.displayPrice)
-                                            .font(.callout.weight(.bold))
-                                    }
-                                }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(AppColors.primary)
-                        .disabled(storeKitManager.isPurchaseInProgress)
-                    }
-                    
-                    // Monthly Premium Button - SUBSCRIPTION
-                    Button {
-                        Task {
-                            let success = await storeKitManager.purchase(productID: feature.monthlyProductID)
-                            if success {
-                                premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
-                                premiumAccessManager.activateMonthlyPremiumForTesting()
-                                dismiss()
-                            }
-                        }
-                    } label: {
-                        Group {
-                            if storeKitManager.isPurchaseInProgress {
-                                ProgressView()
-                            } else {
-                                if let monthlyProduct = monthlyProduct {
-                                    HStack(spacing: 8) {
-                                        Text(languageManager.selectedLanguage == .english ? "Monthly Premium" : "Aylık Premium")
-                                            .font(.subheadline.weight(.medium))
-                                        Text(monthlyProduct.displayPrice + " / " + (languageManager.selectedLanguage == .english ? "mo" : "ay"))
-                                            .font(.subheadline.weight(.semibold))
-                                    }
-                                } else {
-                                    Text(languageManager.selectedLanguage == .english ? "Monthly Premium" : "Aylık Premium")
-                                        .font(.subheadline.weight(.medium))
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(AppColors.primary)
-                    .disabled(storeKitManager.isPurchaseInProgress)
-                    
-                    HStack(spacing: 16) {
-                        Button {
-                            Task {
-                                await storeKitManager.restorePurchases()
-                                premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
-                            }
-                        } label: {
-                            Text(languageManager.selectedLanguage == .english ? "Restore Purchases" : "Satın Almaları Geri Yükle")
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(AppColors.primary)
-                        }
-                        .disabled(storeKitManager.isPurchaseInProgress)
-                        
-                        Button {
-                            dismiss()
-                        } label: {
-                            Text(languageManager.selectedLanguage == .english ? "Maybe Later" : "Daha Sonra")
-                                .font(.caption)
-                                .foregroundStyle(AppColors.secondaryText)
-                        }
-                    }
-                    
-                    // Legal Links
-                    HStack(spacing: 12) {
-                        Link(destination: URL(string: "https://mhdtrk10.github.io")!) {
-                            Text(languageManager.selectedLanguage == .english ? "Privacy Policy" : "Gizlilik Politikası")
-                                .font(.caption2)
-                                .foregroundStyle(AppColors.secondaryText)
-                        }
-                        
-                        Text("•")
-                            .font(.caption2)
-                            .foregroundStyle(AppColors.secondaryText)
-                        
-                        Link(destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) {
-                            Text(languageManager.selectedLanguage == .english ? "Terms of Use" : "Kullanım Koşulları")
-                                .font(.caption2)
-                                .foregroundStyle(AppColors.secondaryText)
-                        }
-                    }
-                    .padding(.top, 4)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 12)
-                .background(.regularMaterial)
+                bottomCTASection
             }
             .navigationTitle("Premium")
             .navigationBarTitleDisplayMode(.inline)
@@ -249,56 +120,327 @@ struct PremiumFeatureSheetView: View {
             }
         }
     }
+    
+    // MARK: - Plan Toggle
+    
+    @ViewBuilder
+    private var planToggle: some View {
+        HStack(spacing: 0) {
+            // Monthly Button
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedPlan = .monthly
+                }
+            } label: {
+                VStack(spacing: 4) {
+                    // Invisible badge placeholder for equal height
+                    Text("PLACEHOLDER")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.clear)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                    
+                    Text(languageManager.selectedLanguage == .english ? "Monthly" : "Aylık")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(selectedPlan == .monthly ? .white : AppColors.secondaryText)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .frame(maxWidth: .infinity)
+                .background(
+                    selectedPlan == .monthly 
+                        ? AppColors.primary 
+                        : Color.clear
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            
+            // Yearly Button with Badge
+            Button {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    selectedPlan = .yearly
+                }
+            } label: {
+                VStack(spacing: 4) {
+                    // Save Badge
+                    Text(languageManager.selectedLanguage == .english ? "SAVE 50%" : "%50 TASARRUF")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule()
+                                .fill(Color.orange)
+                        )
+                        .opacity(selectedPlan == .yearly ? 1.0 : 0.9)
+                    
+                    Text(languageManager.selectedLanguage == .english ? "Yearly" : "Yıllık")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(selectedPlan == .yearly ? .white : AppColors.secondaryText)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .frame(maxWidth: .infinity)
+                .background(
+                    selectedPlan == .yearly 
+                        ? AppColors.primary 
+                        : Color.clear
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .padding(4)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(.systemGray5))
+        )
+    }
+    
+    // MARK: - Price Display
+    
+    @ViewBuilder
+    private var priceDisplay: some View {
+        VStack(spacing: 8) {
+            if selectedPlan == .monthly {
+                if let monthlyProduct = storeKitManager.product(for: feature.monthlyProductID) {
+                    VStack(spacing: 4) {
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text(monthlyProduct.displayPrice)
+                                .font(.system(size: 36, weight: .bold))
+                                .foregroundStyle(AppColors.primary)
+                            
+                            Text("/ " + (languageManager.selectedLanguage == .english ? "month" : "ay"))
+                                .font(.subheadline)
+                                .foregroundStyle(AppColors.secondaryText)
+                        }
+                        
+                        // Invisible placeholder to maintain height
+                        Text(" ")
+                            .font(.caption)
+                            .foregroundStyle(.clear)
+                    }
+                } else {
+                    ProgressView()
+                }
+            } else {
+                if let yearlyProduct = storeKitManager.product(for: feature.yearlyProductID) {
+                    VStack(spacing: 4) {
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            Text(yearlyProduct.displayPrice)
+                                .font(.system(size: 36, weight: .bold))
+                                .foregroundStyle(AppColors.primary)
+                            
+                            Text("/ " + (languageManager.selectedLanguage == .english ? "year" : "yıl"))
+                                .font(.subheadline)
+                                .foregroundStyle(AppColors.secondaryText)
+                        }
+                        
+                        // Monthly equivalent - with proper handling
+                        monthlyEquivalentText(for: yearlyProduct)
+                    }
+                } else {
+                    ProgressView()
+                }
+            }
+        }
+        .frame(height: 80)
+        .animation(.easeInOut(duration: 0.2), value: selectedPlan)
+    }
+    
+    @ViewBuilder
+    private func monthlyEquivalentText(for product: Product) -> some View {
+        if let formatted = formatMonthlyEquivalent(for: product) {
+            Text("≈ \(formatted)/\(languageManager.selectedLanguage == .english ? "mo" : "ay")")
+                .font(.caption)
+                .foregroundStyle(AppColors.secondaryText)
+        }
+    }
+    
+    private func formatMonthlyEquivalent(for product: Product) -> String? {
+        guard let price = product.price as? Decimal else { return nil }
+        
+        let monthlyEquivalent = price / 12
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = product.priceFormatStyle.currencyCode
+        formatter.maximumFractionDigits = 2
+        
+        return formatter.string(from: monthlyEquivalent as NSNumber)
+    }
+    
+    // MARK: - Bottom CTA Section
+    
+    @ViewBuilder
+    private var bottomCTASection: some View {
+        VStack(spacing: 12) {
+            if storeKitManager.isLoadingProducts {
+                HStack {
+                    ProgressView()
+                    Text(languageManager.selectedLanguage == .english ? "Loading products..." : "Ürünler yükleniyor...")
+                        .font(.subheadline)
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+            } else if storeKitManager.products.isEmpty {
+                // Error state
+                VStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.orange)
+                    
+                    Text(languageManager.selectedLanguage == .english 
+                        ? "Unable to load products. Please check your internet connection and try again." 
+                        : "Ürünler yüklenemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.")
+                        .font(.caption)
+                        .foregroundStyle(AppColors.secondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                    
+                    Button {
+                        Task {
+                            await storeKitManager.loadProducts()
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "arrow.clockwise")
+                            Text(languageManager.selectedLanguage == .english ? "Retry" : "Tekrar Dene")
+                        }
+                        .font(.subheadline.weight(.medium))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(AppColors.primary)
+                }
+                .padding()
+            } else {
+                // Main Subscribe Button
+                subscribeButton
+                
+                // Billing info
+                Text(billingText)
+                    .font(.caption)
+                    .foregroundStyle(AppColors.secondaryText)
+                    .multilineTextAlignment(.center)
+                
+                // Restore Purchases
+                Button {
+                    Task {
+                        await storeKitManager.restorePurchases()
+                        premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
+                    }
+                } label: {
+                    Text(languageManager.selectedLanguage == .english ? "Restore Purchases" : "Satın Almaları Geri Yükle")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(AppColors.primary)
+                }
+                .disabled(storeKitManager.isPurchaseInProgress)
+            }
+            
+            // Legal Links
+            HStack(spacing: 12) {
+                Link(destination: URL(string: "https://mhdtrk10.github.io")!) {
+                    Text(languageManager.selectedLanguage == .english ? "Privacy Policy" : "Gizlilik Politikası")
+                        .font(.caption2)
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+                
+                Text("•")
+                    .font(.caption2)
+                    .foregroundStyle(AppColors.secondaryText)
+                
+                Link(destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!) {
+                    Text(languageManager.selectedLanguage == .english ? "Terms of Use" : "Kullanım Koşulları")
+                        .font(.caption2)
+                        .foregroundStyle(AppColors.secondaryText)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 16)
+        .background(.regularMaterial)
+    }
+    
+    @ViewBuilder
+    private var subscribeButton: some View {
+        Button {
+            Task {
+                let productID = selectedPlan == .monthly ? feature.monthlyProductID : feature.yearlyProductID
+                let success = await storeKitManager.purchase(productID: productID)
+                if success {
+                    premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
+                    // Activate premium for testing (works for both monthly and yearly)
+                    premiumAccessManager.activateMonthlyPremiumForTesting()
+                    dismiss()
+                }
+            }
+        } label: {
+            subscribeButtonLabel
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(AppColors.primary)
+        .disabled(storeKitManager.isPurchaseInProgress || currentProduct == nil)
+    }
+    
+    @ViewBuilder
+    private var subscribeButtonLabel: some View {
+        if storeKitManager.isPurchaseInProgress {
+            ProgressView()
+                .tint(.white)
+        } else if selectedPlan == .monthly {
+            if let product = storeKitManager.product(for: feature.monthlyProductID) {
+                Text("Subscribe — \(product.displayPrice)/\(languageManager.selectedLanguage == .english ? "month" : "ay")")
+                    .font(.headline)
+            } else {
+                Text(languageManager.selectedLanguage == .english ? "Subscribe" : "Abone Ol")
+                    .font(.headline)
+            }
+        } else {
+            if let product = storeKitManager.product(for: feature.yearlyProductID) {
+                Text("Subscribe — \(product.displayPrice)/\(languageManager.selectedLanguage == .english ? "year" : "yıl")")
+                    .font(.headline)
+            } else {
+                Text(languageManager.selectedLanguage == .english ? "Subscribe" : "Abone Ol")
+                    .font(.headline)
+            }
+        }
+    }
+    
+    private var billingText: String {
+        if selectedPlan == .monthly {
+            return languageManager.selectedLanguage == .english 
+                ? "Billed monthly. Cancel anytime." 
+                : "Aylık ücretlendirilir. İstediğiniz zaman iptal edebilirsiniz."
+        } else {
+            return languageManager.selectedLanguage == .english 
+                ? "Billed annually. Cancel anytime." 
+                : "Yıllık ücretlendirilir. İstediğiniz zaman iptal edebilirsiniz."
+        }
+    }
+    
+    private var currentProduct: Product? {
+        if selectedPlan == .monthly {
+            return storeKitManager.product(for: feature.monthlyProductID)
+        } else {
+            return storeKitManager.product(for: feature.yearlyProductID)
+        }
+    }
+
+    // MARK: - Hero Section
 
     @ViewBuilder
     private var heroSection: some View {
-        let accent = heroAccentColor
-
-        // Circle background removed - just show the media directly
-        heroMedia(accent: accent)
-            //.padding(.bottom, 12)
-    }
-
-    @ViewBuilder
-    private func heroMedia(accent: Color) -> some View {
-        if let cat = selectedCat {
-            if let gifName = cat.animatedGIFName {
-                // GIF: Rectangular shape (wider than tall) - larger size
-                AnimatedImageView(
-                    fileName: gifName,
-                    contentMode: .scaleAspectFit,
-                    cornerRadius: 32,
-                    internalScale: 1.0
+        Image(systemName: "crown.fill")
+            .font(.system(size: 72))
+            .foregroundStyle(
+                LinearGradient(
+                    colors: [AppColors.primary, AppColors.primary.opacity(0.6)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
-                .frame(width: 300, height: 260)  // Rectangular: wider than tall
-                .scaleEffect(0.62)  // Keep user's scaleEffect
-                .clipShape(RoundedRectangle(cornerRadius: 32))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 32)
-                        .stroke(accent.opacity(0.20), lineWidth: 2)
-                )
-            } else if UIImage(named: cat.imageName) != nil {
-                // Photo: Rectangular shape (wider than tall) - larger size
-                Image(cat.imageName)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 300, height: 260)  // Larger rectangular (was 180x180)
-                    .clipShape(RoundedRectangle(cornerRadius: 32))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 32)
-                            .stroke(accent.opacity(0.20), lineWidth: 2)
-                    )
-            } else {
-                Image(systemName: cat.systemImageName)
-                    .font(.system(size: 80))  // Larger icon
-                    .foregroundStyle(accent)
-                    .frame(width: 260, height: 180)  // Rectangular frame
-            }
-        } else {
-            Image(systemName: "crown.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(AppColors.primary)
-        }
+            )
+            .padding(.vertical, 12)
     }
 
     private var selectedCat: CatItem? {
@@ -319,6 +461,10 @@ struct PremiumFeatureSheetView: View {
 
     private var monthlyProduct: Product? {
         storeKitManager.product(for: feature.monthlyProductID)
+    }
+    
+    private var yearlyProduct: Product? {
+        storeKitManager.product(for: feature.yearlyProductID)
     }
     
     private var featureIcon: String {

@@ -25,7 +25,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "cat.sleepy.unlock",
+      "productID" : "com.mehdioturak.pawse.cat.sleepy.unlock",
       "referenceName" : "Sleepy Cat Unlock",
       "type" : "NonConsumable"
     },
@@ -40,7 +40,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "cat.angry.unlock",
+      "productID" : "com.mehdioturak.pawse.cat.angry.unlock",
       "referenceName" : "Angry Cat Unlock",
       "type" : "NonConsumable"
     },
@@ -55,7 +55,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "cat.office.unlock",
+      "productID" : "com.mehdioturak.pawse.cat.office.unlock",
       "referenceName" : "Office Cat Unlock",
       "type" : "NonConsumable"
     },
@@ -70,7 +70,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "cat.space.unlock",
+      "productID" : "com.mehdioturak.pawse.cat.space.unlock",
       "referenceName" : "Space Cat Unlock",
       "type" : "NonConsumable"
     }
@@ -101,6 +101,15 @@
           "adHocOffers" : [
 
           ],
+          "billingPlans" : [
+            {
+              "billingPlanType" : "BILLED_UPFRONT",
+              "commitmentDisplayPrice" : "3.99",
+              "displayPrice" : "3.99",
+              "internalID" : "029CEDC2",
+              "isEnabled" : true
+            }
+          ],
           "codeOffers" : [
 
           ],
@@ -118,9 +127,48 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "pawse.premium.monthly",
+          "productID" : "com.mehdioturak.pawse.premium.monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Pawse Premium Monthly",
+          "subscriptionGroupID" : "1715AE5E",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "billingPlans" : [
+            {
+              "billingPlanType" : "BILLED_UPFRONT",
+              "commitmentDisplayPrice" : "0.99",
+              "displayPrice" : "0.99",
+              "internalID" : "3EAEA7EE",
+              "isEnabled" : true
+            }
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "19.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "E0480ECA",
+          "introductoryOffers" : [
+
+          ],
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.mehdioturak.pawse.premium.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Pawse Premium Yearly",
           "subscriptionGroupID" : "1715AE5E",
           "type" : "RecurringSubscription",
           "winbackOffers" : [

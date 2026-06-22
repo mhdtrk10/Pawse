@@ -11,10 +11,11 @@ struct CatsView: View {
     @StateObject private var viewModel = CatsViewModel()
     @EnvironmentObject private var languageManager: LanguageManager
     @EnvironmentObject private var premiumAccessManager: PremiumAccessManager
+    @EnvironmentObject private var storeKitManager: StoreKitManager
 
     @State private var showCustomPhotoEditor = false
     @State private var showCustomGIFEditor = false
-    @EnvironmentObject private var storeKitManager: StoreKitManager
+    @State private var selectedPremiumCat: CatItem?
 
     var body: some View {
         NavigationStack {
@@ -38,6 +39,14 @@ struct CatsView: View {
             .sheet(item: $viewModel.premiumFeature) { feature in
                 PremiumFeatureSheetView(feature: feature)
                     .environmentObject(languageManager)
+                    .environmentObject(premiumAccessManager)
+                    .environmentObject(storeKitManager)
+            }
+            // Sheet for Premium Cats - Single cat unlock
+            .sheet(item: $selectedPremiumCat) { cat in
+                PremiumCatSheetView(cat: cat)
+                    .environmentObject(languageManager)
+                    .environmentObject(storeKitManager)
                     .environmentObject(premiumAccessManager)
             }
             .navigationDestination(isPresented: $showCustomPhotoEditor) {
@@ -149,7 +158,7 @@ struct CatsView: View {
         let accent = CatThemeHelper.color(for: cat.accentColorKey)
 
         Button {
-            viewModel.handleTap(on: cat, hasAccess: premiumAccessManager.hasAccess(to: cat))
+            handleCatTap(cat: cat)
         } label: {
             CardContainer {
                 HStack(spacing: 18) {
@@ -212,6 +221,16 @@ struct CatsView: View {
             }
         }
         .buttonStyle(.plain)
+    }
+    
+    private func handleCatTap(cat: CatItem) {
+        if cat.isPremium && !premiumAccessManager.hasAccess(to: cat) {
+            // Show PremiumCatSheetView for locked premium cats
+            selectedPremiumCat = cat
+        } else {
+            // Select the cat if it's free or already unlocked
+            viewModel.selectCat(cat)
+        }
     }
 
     @ViewBuilder

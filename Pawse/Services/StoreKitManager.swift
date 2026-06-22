@@ -22,12 +22,22 @@ final class StoreKitManager: ObservableObject {
         isLoadingProducts = true
         defer { isLoadingProducts = false }
 
-
+        print("🛒 [StoreKit] Requesting products for IDs: \(StoreProductID.all)")
+        
         do {
             let storeProducts = try await Product.products(for: StoreProductID.all)
             self.products = storeProducts.sorted { $0.id < $1.id }
+            
+            print("✅ [StoreKit] Successfully loaded \(storeProducts.count) products:")
+            for product in storeProducts {
+                print("  - \(product.id): \(product.displayName) - \(product.displayPrice)")
+            }
+            
+            if storeProducts.isEmpty {
+                print("⚠️ [StoreKit] WARNING: No products were loaded!")
+            }
         } catch {
-            print("Failed to load StoreKit products: \(error)")
+            print("❌ [StoreKit] Failed to load products: \(error.localizedDescription)")
             purchaseErrorMessage = "Failed to load products."
         }
     }
@@ -35,12 +45,19 @@ final class StoreKitManager: ObservableObject {
     func refreshEntitlements() async {
         var purchasedIDs: Set<String> = []
 
+        print("🔄 [StoreKit] Refreshing entitlements...")
+        
         for await result in Transaction.currentEntitlements {
-            guard case .verified(let transaction) = result else { continue }
+            guard case .verified(let transaction) = result else { 
+                print("⚠️ [StoreKit] Unverified transaction found")
+                continue 
+            }
             purchasedIDs.insert(transaction.productID)
+            print("✅ [StoreKit] Verified entitlement: \(transaction.productID)")
         }
 
         self.purchasedProductIDs = purchasedIDs
+        print("📦 [StoreKit] Total entitlements: \(purchasedIDs.count)")
     }
 
     func purchase(productID: String) async -> Bool {

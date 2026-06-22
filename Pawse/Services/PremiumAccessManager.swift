@@ -24,7 +24,7 @@ final class PremiumAccessManager: ObservableObject {
         var newUnlockedCatIDs: Set<String> = []
         var newMonthlyPremiumState = false
 
-        if purchasedIDs.contains(StoreProductID.premiumMonthly) {
+        if purchasedIDs.contains(StoreProductID.premiumMonthly) || purchasedIDs.contains(StoreProductID.premiumYearly) {
             newMonthlyPremiumState = true
         }
 
@@ -45,7 +45,7 @@ final class PremiumAccessManager: ObservableObject {
         unlockedCatIDs = newUnlockedCatIDs
         persist()
         
-        print("🔄 [PremiumAccessManager] Synced with StoreKit: Monthly=\(newMonthlyPremiumState), UnlockedCats=\(newUnlockedCatIDs)")
+        print("🔄 [PremiumAccessManager] Synced with StoreKit: Monthly/Yearly=\(newMonthlyPremiumState), UnlockedCats=\(newUnlockedCatIDs)")
     }
 
     func activateMonthlyPremiumForTesting() {

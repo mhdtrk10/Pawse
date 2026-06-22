@@ -85,4 +85,8 @@ enum PremiumFeature: Identifiable {
     var monthlyProductID: String {
         StoreProductID.premiumMonthly
     }
+    
+    var yearlyProductID: String {
+        StoreProductID.premiumYearly
+    }
 }

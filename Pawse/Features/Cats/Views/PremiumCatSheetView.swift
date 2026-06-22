@@ -6,11 +6,14 @@
 //
 
 import SwiftUI
+import StoreKit
 
 struct PremiumCatSheetView: View {
     let cat: CatItem
 
     @EnvironmentObject private var languageManager: LanguageManager
+    @EnvironmentObject private var storeKitManager: StoreKitManager
+    @EnvironmentObject private var premiumAccessManager: PremiumAccessManager
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -21,13 +24,11 @@ struct PremiumCatSheetView: View {
                 Spacer()
 
                 ZStack {
-                    Circle()
+                    RoundedRectangle(cornerRadius: 40)
                         .fill(accent.opacity(0.15))
-                        .frame(width: 420, height: 420)  // DOUBLE original (210 x 2)
+                        .frame(width: 360, height: 360)
 
                     premiumCatImage(accent: accent)
-                    
-                    
                 }
 
                 VStack(spacing: 10) {
@@ -69,16 +70,53 @@ struct PremiumCatSheetView: View {
                 .padding(.horizontal)
 
                 Button {
-                    dismiss()
+                    Task {
+                        if let productID = singleUnlockProductID {
+                            let success = await storeKitManager.purchase(productID: productID)
+                            if success {
+                                premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
+                                premiumAccessManager.unlockCatForTesting(cat.id)
+                                dismiss()
+                            }
+                        }
+                    }
                 } label: {
-                    Text(languageManager.selectedLanguage == .english ? "Got it" : "Anladım")
+                    if storeKitManager.isPurchaseInProgress {
+                        ProgressView()
+                            .tint(.white)
+                    } else if let product = singleUnlockProduct {
+                        Text("\(languageManager.selectedLanguage == .english ? "Unlock for" : "Kilidi Aç") \(product.displayPrice)")
+                            .font(.headline)
+                    } else {
+                        Text(languageManager.selectedLanguage == .english ? "Loading..." : "Yükleniyor...")
+                            .font(.headline)
+                    }
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .padding(.horizontal)
+                .disabled(storeKitManager.isPurchaseInProgress || singleUnlockProduct == nil)
 
-                Text(languageManager.selectedLanguage == .english ? "Unlock flow coming soon" : "Kilidi açma akışı yakında")
-                    .font(.caption)
-                    .foregroundStyle(AppColors.secondaryText)
+                HStack(spacing: 16) {
+                    Button {
+                        Task {
+                            await storeKitManager.restorePurchases()
+                            premiumAccessManager.syncWithStoreKitPurchasedIDs(storeKitManager.purchasedProductIDs)
+                        }
+                    } label: {
+                        Text(languageManager.selectedLanguage == .english ? "Restore Purchases" : "Satın Almaları Geri Yükle")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(accent)
+                    }
+                    .disabled(storeKitManager.isPurchaseInProgress)
+                    
+                    Button {
+                        dismiss()
+                    } label: {
+                        Text(languageManager.selectedLanguage == .english ? "Maybe Later" : "Daha Sonra")
+                            .font(.caption)
+                            .foregroundStyle(AppColors.secondaryText)
+                    }
+                }
 
                 Spacer()
             }
@@ -91,35 +129,49 @@ struct PremiumCatSheetView: View {
     @ViewBuilder
     private func premiumCatImage(accent: Color) -> some View {
         if let gifName = cat.animatedGIFName {
-            // DOUBLE original size (160 x 2 = 320)
             AnimatedImageView(
                 fileName: gifName,
                 contentMode: .scaleAspectFit,
-                cornerRadius: 40,
+                cornerRadius: 32,
                 internalScale: 1.0
             )
-            .frame(width: 320, height: 320)  // DOUBLE original (160 x 2)
-            .clipShape(RoundedRectangle(cornerRadius: 40))
+            .frame(width: 280, height: 280)
+            .clipShape(RoundedRectangle(cornerRadius: 32))
             .overlay(
-                RoundedRectangle(cornerRadius: 40)
+                RoundedRectangle(cornerRadius: 32)
                     .stroke(accent.opacity(0.18), lineWidth: 2)
             )
         } else if UIImage(named: cat.imageName) != nil {
             Image(cat.imageName)
                 .resizable()
                 .scaledToFill()
-                .frame(width: 320, height: 320)  // DOUBLE original (160 x 2)
-                .clipShape(RoundedRectangle(cornerRadius: 40))
+                .frame(width: 280, height: 280)
+                .clipShape(RoundedRectangle(cornerRadius: 32))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 40)
+                    RoundedRectangle(cornerRadius: 32)
                         .stroke(accent.opacity(0.18), lineWidth: 2)
                 )
         } else {
             Image(systemName: cat.systemImageName)
-                .font(.system(size: 108))  // DOUBLE original (54 x 2)
+                .font(.system(size: 96))
                 .foregroundStyle(accent)
-                .frame(width: 320, height: 320)  // DOUBLE original (160 x 2)
+                .frame(width: 280, height: 280)
         }
+    }
+    
+    private var singleUnlockProductID: String? {
+        switch cat.id {
+        case "sleepy_cat": return StoreProductID.sleepyCat
+        case "angry_cat": return StoreProductID.angryCat
+        case "office_cat": return StoreProductID.officeCat
+        case "space_cat": return StoreProductID.spaceCat
+        default: return nil
+        }
+    }
+    
+    private var singleUnlockProduct: Product? {
+        guard let productID = singleUnlockProductID else { return nil }
+        return storeKitManager.product(for: productID)
     }
     
 }
@@ -140,4 +192,6 @@ struct PremiumCatSheetView: View {
         )
     )
     .environmentObject(LanguageManager())
+    .environmentObject(StoreKitManager())
+    .environmentObject(PremiumAccessManager())
 }
